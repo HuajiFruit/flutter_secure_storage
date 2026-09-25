@@ -1,0 +1,11 @@
+{
+  "name": "flutter_secure_storage_ohos",
+  "version": "1.0.0",
+  "description": "OpenHarmony secure storage implementation",
+  "main": "index.ets",
+  "author": "",
+  "license": "BSD-3-Clause",
+  "dependencies": {
+    "@ohos/flutter_ohos": "file:./har/flutter.har"
+  }
+}

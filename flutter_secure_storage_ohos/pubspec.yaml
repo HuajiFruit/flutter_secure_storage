@@ -1,0 +1,20 @@
+name: flutter_secure_storage_ohos
+description: OpenHarmony implementation of flutter_secure_storage.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+  flutter: '>=3.19.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_secure_storage_platform_interface: ^2.0.1
+
+flutter:
+  plugin:
+    implements: flutter_secure_storage
+    platforms:
+      ohos:
+        pluginClass: FlutterSecureStorageOhosPlugin

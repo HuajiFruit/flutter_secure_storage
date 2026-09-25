@@ -1,0 +1,16 @@
+/.dart_tool/
+/.flutter-plugins-dependencies
+/pubspec.lock
+/build/
+/coverage/
+/example/
+/ohos/node_modules/
+/ohos/oh_modules/
+/ohos/local.properties
+/ohos/.preview/
+/ohos/.idea/
+/ohos/build/
+/ohos/.cxx/
+/ohos/.test/
+/ohos/BuildProfile.ets
+/ohos/oh-package-lock.json5

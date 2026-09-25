@@ -365,6 +365,8 @@ class FlutterSecureStorage {
       return wOptions?.params ?? this.wOptions.params;
     } else if (defaultTargetPlatform == TargetPlatform.macOS) {
       return mOptions?.params ?? this.mOptions.params;
+    } else if (defaultTargetPlatform.name == 'ohos') {
+      return <String, String>{};
     } else {
       throw UnsupportedError(_unsupportedPlatform);
     }
