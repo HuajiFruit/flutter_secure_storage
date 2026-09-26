@@ -6,6 +6,7 @@ import {
   MethodChannel,
   MethodResult,
 } from '@ohos/flutter_ohos';
+import { BusinessError } from '@kit.BasicServicesKit';
 
 import SecureStorage from './SecureStorage';
 
@@ -32,8 +33,8 @@ export default class FlutterSecureStorageOhosPlugin implements FlutterPlugin, Me
   }
 
   onMethodCall(call: MethodCall, result: MethodResult): void {
-    this.dispatch(call, result).catch((): void => {
-      result.error('storage_error', `Secure storage ${call.method} failed`, null);
+    this.dispatch(call, result).catch((error: BusinessError): void => {
+      result.error('storage_error', `Secure storage ${call.method} failed: ${error.message}`, error.code ?? null);
     });
   }
 

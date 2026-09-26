@@ -1,4 +1,5 @@
 import { preferences } from '@kit.ArkData';
+import { BusinessError } from '@kit.BasicServicesKit';
 import { cryptoFramework } from '@kit.CryptoArchitectureKit';
 import { util } from '@kit.ArkTS';
 import { huks } from '@kit.UniversalKeystoreKit';
@@ -7,8 +8,10 @@ const KEY_ALIAS = 'flutter_secure_storage_ohos_aes_gcm_v1';
 const PREFERENCES_NAME = 'FlutterSecureStorage';
 const ENTRY_PREFIX = 'fss_ohos_v1_';
 const FORMAT_VERSION = 'v1';
+const EMPTY_FORMAT_VERSION = 'v1e';
 const NONCE_LENGTH = 12;
 const TAG_LENGTH = 16;
+const HUKS_KEY_NOT_FOUND = 12000011;
 
 export default class SecureStorage {
   private readonly data: preferences.Preferences;
@@ -24,12 +27,13 @@ export default class SecureStorage {
   async write(key: string, value: string): Promise<void> {
     await this.ensureKey();
     const nonce = cryptoFramework.createRandom().generateRandomSync(NONCE_LENGTH).data;
+    const isEmpty = value.length === 0;
     const ciphertext = await this.crypt(
       huks.HuksKeyPurpose.HUKS_KEY_PURPOSE_ENCRYPT,
       nonce,
-      this.encoder.encodeInto(value),
+      isEmpty ? new Uint8Array([0]) : this.encoder.encodeInto(value),
     );
-    const stored = `${FORMAT_VERSION}:${this.base64.encodeToStringSync(nonce)}:${this.base64.encodeToStringSync(ciphertext)}`;
+    const stored = `${isEmpty ? EMPTY_FORMAT_VERSION : FORMAT_VERSION}:${this.base64.encodeToStringSync(nonce)}:${this.base64.encodeToStringSync(ciphertext)}`;
     this.data.putSync(this.entryKey(key), stored);
     await this.data.flush();
   }
@@ -44,7 +48,7 @@ export default class SecureStorage {
       throw new Error('Invalid stored value');
     }
     const parts = stored.split(':');
-    if (parts.length !== 3 || parts[0] !== FORMAT_VERSION) {
+    if (parts.length !== 3 || (parts[0] !== FORMAT_VERSION && parts[0] !== EMPTY_FORMAT_VERSION)) {
       throw new Error('Unsupported stored value format');
     }
     const nonce = this.base64.decodeSync(parts[1]);
@@ -52,15 +56,18 @@ export default class SecureStorage {
     if (nonce.length !== NONCE_LENGTH || ciphertext.length < TAG_LENGTH) {
       throw new Error('Invalid ciphertext');
     }
-    if (!(await huks.isKeyItemExist(KEY_ALIAS, { properties: [] }))) {
-      throw new Error('Encryption key is unavailable');
-    }
     const plaintext = await this.crypt(
       huks.HuksKeyPurpose.HUKS_KEY_PURPOSE_DECRYPT,
       nonce,
       ciphertext.slice(0, ciphertext.length - TAG_LENGTH),
       ciphertext.slice(ciphertext.length - TAG_LENGTH),
     );
+    if (parts[0] === EMPTY_FORMAT_VERSION) {
+      if (plaintext.length !== 1 || plaintext[0] !== 0) {
+        throw new Error('Invalid empty value');
+      }
+      return '';
+    }
     return this.decoder.decodeWithStream(plaintext);
   }
 
@@ -110,8 +117,14 @@ export default class SecureStorage {
   }
 
   private async createKey(): Promise<void> {
-    if (await huks.isKeyItemExist(KEY_ALIAS, { properties: [] })) {
-      return;
+    try {
+      if (await huks.isKeyItemExist(KEY_ALIAS, { properties: [] })) {
+        return;
+      }
+    } catch (error) {
+      if ((error as BusinessError).code !== HUKS_KEY_NOT_FOUND) {
+        return Promise.reject(error);
+      }
     }
     const properties: huks.HuksParam[] = [
       { tag: huks.HuksTag.HUKS_TAG_ALGORITHM, value: huks.HuksKeyAlg.HUKS_ALG_AES },

@@ -17,9 +17,12 @@
 
 数据使用 HUKS 中的 AES-256-GCM 密钥加密，Preferences 保存带版本号的密文，每次写入生成新的 nonce。读取不存在的键返回 `null`，原生操作失败通过方法通道返回错误。
 
+首次写入时，HUKS 的 `isKeyItemExist()` 会以错误码 `12000011` 表示密钥不存在；插件仅对此错误继续建钥，其他错误原样返回。方法通道在错误消息中保留原始描述，并把原始错误码放在 `PlatformException.details`。空字符串使用 `v1e` 格式加密一个占位字节，读取后还原为空字符串；原有 `v1` 密文仍可读取。
+
 ## 验证与限制
 
 - 主包与 OHOS 子包的 `flutter analyze` 均通过。
 - 主包 `flutter test` 的 93 个测试全部通过。
 - OHOS 示例的 debug HAP 构建通过，生成的插件注册代码包含 `FlutterSecureStorageOhosPlugin`。
-- 尚未在 OHOS 设备上验证实际读写；当前实现不会迁移 CPF 1.2.2 写入的旧数据。
+- 在 HarmonyOS 7.0.0（API 26）x64 模拟器上，通过主包 API 验证了首次写入、读取、覆盖写、中文和空字符串、`containsKey`、`readAll`、单项删除、全部删除，以及进程重启后读取。
+- 尚未在真机上验证；当前实现不会迁移 CPF 1.2.2 写入的旧数据。
